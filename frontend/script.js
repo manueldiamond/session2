@@ -11,7 +11,7 @@ const taglineElement=document.getElementById("tagline");
 
 taglineElement.innerHTML = welcomeMessage;
 
-function renderProduct(name, price, description, stock) {
+function renderProduct(name, price, description, stock,id) {
     const divElement = document.createElement("div");
     divElement.className = "product-item"
 
@@ -28,7 +28,7 @@ function renderProduct(name, price, description, stock) {
 
     const priceElement = document.createElement("p"); 
     priceElement.className = "price";
-    priceElement.textContent = `GHS${price.toFixed(2)}`;
+    priceElement.textContent = `Price: GHS${price.toFixed(2)}`;
 
     const stockElement = document.createElement("p");
     stockElement.className = "stock";
@@ -45,14 +45,16 @@ function renderProduct(name, price, description, stock) {
  
     const buttons = document.createElement("div")
     buttons.className="buttons-container"
-    const button1=document.createElement("button")
+    const addToCartButton=document.createElement("button")
     const button2=document.createElement("button")
     button2.className="primary"
 
-    button1.textContent="Add to Cart"
+    addToCartButton.textContent="Add to Cart"
     button2.textContent="Buy Now"
 
-    buttons.appendChild(button1)
+    addToCartButton.onclick=()=>addToCart(id)
+    
+    buttons.appendChild(addToCartButton)
     buttons.appendChild(button2)
 
     divElement.appendChild(productImage);
@@ -63,19 +65,27 @@ function renderProduct(name, price, description, stock) {
     divElement.appendChild(buttons);
 
     gridElement.appendChild(divElement);
-
 }
 
-
-
 async function queryProducts(){
-    const response = await fetch("http://localhost:8003/products")
-    const products = await response.json();
+    try{
+        const response = await fetch("http://localhost:8003/products")
+        const products = await response.json();
 
-    products.forEach((item) => {
-        renderProduct(item.name, item.price, item.description, item.stock);
-    })
+        products.forEach((item) => {
+            renderProduct(item.name, item.price, item.description, item.stock,item.id);
+        })
+    } catch(e){
+        console.log("Something went wrong")
+    }
+}
 
+async function addToCart(id) {
+    fetch("http://localhost:8003/products/add-to-cart/"+id,{
+        method:"PUT"
+    }).then((response)=>response.json()
+        .then((data)=> alert(`${data.message} \n ${data.products}`))
+        .catch(e => alert(e.detail ||" An unexpected error occured")))
 }
 
 queryProducts();
