@@ -1,8 +1,12 @@
+
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-import sqlite3
+
+from db import get_db
+from schemas import Product
+from routes.auth import auth_routes
 
 app = FastAPI()
 
@@ -14,61 +18,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class Product(BaseModel):
-    id: int
-    name: str
-    price: float
-    stock: int
-    description: str
 
-class CartItem(BaseModel):
-    product_id:int
-
-DB = "products.db"
-
-def get_db_connection():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def create_tables():
-    conn = get_db_connection()
-    try:
-        conn.executescript("""
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            price REAL NOT NULL,
-            stock INTEGER NOT NULL DEFAULT 0,
-            description TEXT NOT NULL
-        );
-        
-        CREATE TABLE IF NOT EXISTS cart (
-            product_id INTEGER UNIQUE NOT NULL REFERENCES products(id)
-        );
-
-        insert into cart(product_id) values (2), (3), (4), (5);
-        """)
-        conn.commit()
-        print("Successfully run create statements")
-    except:
-        print("Failed to execute")
-    finally:
-        conn.close()
-
-       
-        
-create_tables()
-
-"""
- SELECT
-
-"""
-
+app.include_router(auth_routes)
 
 @app.get("/products")
 def get_products() -> list[Product]:
-    connection = get_db_connection()
+    connection = get_db()
     rows = connection.execute("SELECT * FROM products").fetchall()
 
     connection.close()
@@ -84,7 +39,7 @@ def get_products() -> list[Product]:
 
 @app.put("/products/add-to-cart/{id}")
 def add_to_cart(id:int):
-    connection = get_db_connection()
+    connection = get_db()
 
     row = connection.execute("select * from cart where product_id = ?", (id,)).fetchone()
 
